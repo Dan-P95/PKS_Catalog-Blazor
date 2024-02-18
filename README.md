@@ -2,8 +2,8 @@ To run the project,
 1. Create a new SQL server database
 2. In the Server Project, add the connection string after "Default Connection" in appsettings.json file
 3. In the console run the following commands
-   a. dotnet ef migrations add InitCreate
-   b. dotnet ef database update
+a. dotnet ef migrations add InitCreate
+b. dotnet ef database update
 
 4. That should create the database and upload sample data. The migration file can be seen created in the Migrations folder
 
