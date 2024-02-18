@@ -1,0 +1,30 @@
+﻿@page "/"
+@page "/search/{searchText}"
+@page "/{groupUrl}"
+
+@inject IItemService ItemService
+
+<PageTitle>My Shop</PageTitle>
+
+<ItemList />
+
+@code{
+	//if these parameters are not null, the index page loads according to parameter 
+	[Parameter]
+	public string? GroupUrl { get; set; } = null;
+	[Parameter]
+	public string? SearchText { get; set; } = null;
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (SearchText != null)
+		{
+			await ItemService.SearchItems(SearchText);
+		}
+		else
+		{
+			await ItemService.GetItems(GroupUrl);
+		}
+		
+	}
+}

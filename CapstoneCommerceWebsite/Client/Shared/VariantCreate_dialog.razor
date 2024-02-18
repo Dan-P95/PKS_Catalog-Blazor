@@ -1,0 +1,152 @@
+﻿@*@page "/itemvariantcreate/{id:int}"*@
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+@using System.Runtime.CompilerServices
+@inject IItemService ItemService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+<PageTitle>CreateItem</PageTitle>
+@*<MudDialog>
+	<TitleContent>
+		<MudText Typo="Typo.h6">
+			<MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3 mb-n1" />
+			Add
+		</MudText>
+	</TitleContent>
+	<DialogContent>
+		<MudContainer Style="max-height: 300px; overflow-y: scroll">
+			<MudTextField @bind-Value="" Label="Item Id" ReadOnly="true"/>
+			<MudTextField @bind-Value="id" Label="Item Id" ReadOnly="true"/>
+			<MudField Label="Set original price higher if item is on sale, else leave it blank" Variant="Variant.Filled" InnerPadding="false">
+				<MudNumericField Immediate="false" Label="Price" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.Price" HelperText="Current Price"/>
+				<MudNumericField Immediate="false" Label="Original Price" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.OriginalPrice" HelperText="Original Price"/>
+			</MudField>
+			<MudSelect @bind-Value="createVariant.ItemGroupId" Label="Select Variant">
+			@foreach (var variant in itemGroupsList)
+			{
+				<MudSelectItem Value="@variant.Id">@variant.Name</MudSelectItem>
+			}
+			</MudSelect>
+
+		</MudContainer>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">Cancel</MudButton>
+		<MudButton Color="Color.Error">Add Item Variant</MudButton>
+	</DialogActions>
+</MudDialog>*@
+
+<MudDialog>
+	<DialogContent>
+		<EditForm Model="@createVariant" OnValidSubmit="OnValidSubmit">
+			<DataAnnotationsValidator />
+			<MudGrid>
+				<MudItem xs="12" sm="7">
+					<MudCard>
+						<MudCardContent>
+							<MudTextField Label="Item Name"@bind-Value="createVariant.ItemGroupId"/>
+							<MudField Label="Set original price higher if item is on sale, else leave it blank" Variant="Variant.Filled" InnerPadding="false">
+								<MudNumericField Immediate="false" Label="Price" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.Price" HelperText="Current Price"/>
+								<MudNumericField Immediate="false" Label="Original Price" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.OriginalPrice" HelperText="Original Price"/>
+							</MudField>
+							<MudSelect @bind-Value="createVariant.ItemGroupId" Label="Item Type">
+								@foreach (ItemGroup option in variantOptionsList)
+								{
+									if (variantOptionsList.Count <= 0)
+									{
+										<MudText>NO COUNT LIST</MudText>
+									}
+									else
+									{
+										<MudSelectItem Value="@option.Id">@option.Name</MudSelectItem>
+									}
+								}
+							</MudSelect>
+
+						</MudCardContent>
+						<MudCardActions>
+							<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create</MudButton>
+							<MudButton ButtonType="ButtonType.Reset" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto">Cancel</MudButton>
+						</MudCardActions>
+						<MudCardContent>
+							@if (alert)
+							{
+								<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+							}
+							@if (worked)
+							{
+								<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+						
+							}
+						</MudCardContent>
+					</MudCard>
+				</MudItem>
+			</MudGrid>
+		</EditForm>
+	</DialogContent>
+</MudDialog>
+
+@code {
+	[CascadingParameter] 
+	MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+	public CreateItemVariant createVariant { get; set; }
+	[Parameter]
+	public List<ItemGroup> variantOptionsList { get; set; }
+
+
+	//public List<ItemGroup> itemGroupList = new List<ItemGroup>();
+	public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
+	bool success;
+	bool alert = false;
+	bool worked = false;
+	string message = string.Empty;
+
+	
+
+	public List<ItemGroup> GetVariantOptions(int groupId)
+	{
+
+		
+		List<ItemGroup> currentList = new List<ItemGroup>();
+
+		if (groupId == 1)
+		{
+			currentList.Add(ItemService.ItemGroups[1]);
+			currentList.Add(ItemService.ItemGroups[2]);
+			currentList.Add(ItemService.ItemGroups[3]);
+			currentList.Add(ItemService.ItemGroups[4]);
+		}
+		if (groupId == 2 || groupId == 3)
+		{
+			currentList.Add(ItemService.ItemGroups[5]);
+			currentList.Add(ItemService.ItemGroups[6]);
+			currentList.Add(ItemService.ItemGroups[7]);
+		}
+		return currentList;
+	}
+
+	private void Cancel()
+	{
+		
+	}
+
+	public async void OnValidSubmit()
+	{
+		//itemVariant.ItemGroupId = item.GroupId;
+		//item.GroupId = groupId;
+		success = true;
+		var result = await ItemService.AddItemVariant(createVariant);
+
+	//if fail display error message otherwise display success
+		message = !result.Success ? result.Message : "Success";
+	//set bool to inverse of success
+		alert = !result.Success;
+		worked = result.Success;
+		StateHasChanged();
+	}
+
+}

@@ -1,0 +1,132 @@
+﻿@page "/edititem/{id:int}"
+@using System.Globalization
+@using System.Runtime.CompilerServices
+@inject IItemService ItemService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+
+<PageTitle>EditItem</PageTitle>
+
+<EditForm Model="@item" OnValidSubmit="OnValidSubmit">
+	<DataAnnotationsValidator />
+	<MudGrid>
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="Item Name"
+								  @bind-Value="item.Name" For="@(() => item.Name)" />
+					<MudTextField Label="Description" HelperText="Description of the item" Class="mt-3"
+								  @bind-Value="item.Description" For="@(() => item.Description)" Lines="3" />
+					<MudTextField Label="Image" HelperText="For Demonstration Purposes, copy image url from the internet" Class="mt-3"
+								  @bind-Value="item.ImageUrl" For="@(() => item.ImageUrl)" />
+					<MudTextField Label="Brand" HelperText="Be sure to type the brand correctly" Class="mt-3"
+								  @bind-Value="item.Brand" For="@(() => item.Brand)" />
+					<MudRadioGroup @bind-SelectedOption="groupId" Required="true" RequiredError="Account type is required!">
+						<MudRadio Option="@(1)">Snowboards</MudRadio>
+						<MudRadio Option="@(2)">Hard Goods</MudRadio>
+						<MudRadio Option="@(3)">Soft Goods</MudRadio>
+					</MudRadioGroup>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create</MudButton>
+				</MudCardActions>
+				<MudCardContent>
+					@if (alert)
+					{
+						<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+					}
+					@if (worked)
+					{
+						<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+						OpenDialog();
+
+					}
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+</EditForm>
+
+@code {
+	[Parameter]
+	public int Id { get; set; }
+
+
+	public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
+	CreateItem item = new CreateItem();
+	Item currentItem = new Item();
+
+	bool success;
+	bool alert = false;
+	bool worked = false;
+	int groupId;
+	string message = string.Empty;
+	int itemId = 0;
+
+	protected override async Task OnParametersSetAsync()
+	{
+
+		message = "Loading Item...";
+		var result = await ItemService.GetItem(Id);
+		
+		if (!result.Success)
+		{
+			message = result.Message;
+		}
+		else
+		{
+			currentItem = result.Data;
+			groupId = currentItem.GroupId;
+
+			item.GroupId = currentItem.GroupId;
+			item.Brand = currentItem.Brand;
+			item.Description = currentItem.Description;
+			item.ImageUrl = currentItem.ImageUrl;
+			item.Name = currentItem.Name;
+
+		}
+	}
+
+
+	private async void OnValidSubmit(EditContext context)
+	{
+		item.GroupId = groupId;
+		success = true;
+		var result = await ItemService.EditItem(item, currentItem.Id);
+
+		//if fail display error message otherwise display success
+		message = !result.Success ? result.Message : "Success";
+		//set bool to inverse of success
+		alert = !result.Success;
+		worked = result.Success;
+		StateHasChanged();
+	}
+
+
+	async Task OpenDialog()
+	{
+		DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
+		var dialog = await DialogService.ShowAsync<Reminder_dialog>("Remember", options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled)
+		{
+			NavigationManager.NavigateTo("item/" + itemId);
+		}
+		else
+		{
+			GoHome();
+		}
+	}
+
+	public async void GoHome()
+	{
+		await Task.Delay(1000);
+		NavigationManager.NavigateTo("");
+	}
+
+
+
+}

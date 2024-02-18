@@ -1,0 +1,74 @@
+﻿@page "/usercreate"
+@using System.Text.RegularExpressions
+@inject IItemService ItemService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>CreateUser</PageTitle>
+
+
+
+<EditForm Model="@user" OnValidSubmit="OnValidSubmit">
+	<DataAnnotationsValidator/>
+	<MudGrid>
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="User Name" HelperText="Max. 8 characters"
+								  @bind-Value="user.UserName" For="@(() => user.UserName)" />
+					<MudTextField Label="Password" HelperText="Choose a strong password" Class="mt-3"
+								  @bind-Value="user.Password" For="@(() => user.Password)" InputType="InputType.Password" />
+					<MudTextField Label="Password" HelperText="Repeat the password" Class="mt-3"
+								  @bind-Value="user.Password2" For="@(() => user.Password2)" InputType="InputType.Password" />
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create</MudButton>
+				</MudCardActions>
+				<MudCardContent>
+					@if (alert)
+					{
+						<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+					}
+					@if (worked)
+					{
+						<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+						GoHome();
+					}
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+</EditForm>
+
+@code {
+
+
+	CreateUser user = new CreateUser();
+	bool success;
+	bool alert = false;
+	bool worked = false;
+
+	string message = string.Empty;
+
+	private async void OnValidSubmit(EditContext context)
+	{
+		success = true;
+		var result = await UserService.AddUser(user);
+
+		//if fail display error message otherwise display success
+		message = !result.Success ? result.Message : "Success";
+		//set bool to inverse of success
+		alert = !result.Success;
+		worked = result.Success;
+		StateHasChanged();
+	}
+
+	public async void GoHome()
+	{
+		await Task.Delay(1000);
+		NavigationManager.NavigateTo("");
+	}
+
+
+
+}

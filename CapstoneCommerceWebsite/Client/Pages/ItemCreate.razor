@@ -1,0 +1,115 @@
+﻿@page "/itemcreate"
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+@using System.Runtime.CompilerServices
+@inject IItemService ItemService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+
+<PageTitle>CreateItem</PageTitle>
+
+<EditForm Model="@item" OnValidSubmit="OnValidSubmit">
+	<DataAnnotationsValidator />
+	<MudGrid>
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="Item Name"
+								  @bind-Value="item.Name" For="@(() => item.Name)" />
+					<MudTextField Label="Description" HelperText="Description of the item" Class="mt-3"
+					              @bind-Value="item.Description" For="@(() => item.Description)" Lines="3" />
+					<MudTextField Label="Image" HelperText="For Demonstration Purposes, copy image url from the internet" Class="mt-3"
+					              @bind-Value="item.ImageUrl" For="@(() => item.ImageUrl)" />
+					<MudTextField Label="Brand" HelperText="Be sure to type the brand correctly" Class="mt-3"
+								  @bind-Value="item.Brand" For="@(() => item.Brand)" />
+					<MudRadioGroup @bind-SelectedOption="groupId" Required="true" RequiredError="Choose one">
+						<MudRadio Option="@(1)">Snowboards</MudRadio>
+						<MudRadio Option="@(2)">Hard Goods</MudRadio>
+						<MudRadio Option="@(3)">Soft Goods</MudRadio>
+					</MudRadioGroup>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create</MudButton>
+				</MudCardActions>
+				<MudCardContent>
+					@if (alert)
+					{
+						<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+					}
+					@if (worked)
+					{
+						<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+						OpenDialog();
+						
+					}
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+</EditForm>
+
+@code {
+
+	public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
+	CreateItem item = new CreateItem();
+
+	bool success;
+	bool alert = false;
+	bool worked = false;
+	int groupId = 0;
+	string message = string.Empty;
+	int itemId = 0;
+
+	private async void OnValidSubmit(EditContext context)
+	{
+		if (groupId == 0)
+		{
+			message = "You must select one item category.";
+			alert = true;
+			return;
+		}
+
+		item.GroupId = groupId;
+		success = true;
+		var result = await ItemService.AddItem(item);
+
+		//if fail display error message otherwise display success
+		message = !result.Success ? result.Message : "Success";
+		//set bool to inverse of success
+		alert = !result.Success;
+		worked = result.Success;
+		StateHasChanged();
+		itemId = result.Data;
+	}
+
+
+	async Task OpenDialog()
+	{
+		DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
+		var dialog = await DialogService.ShowAsync<Reminder_dialog>("Remember", options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled)
+		{
+			NavigationManager.NavigateTo("item/" + itemId);
+		}
+		else
+		{
+			GoHome();
+		}
+	}
+
+	
+
+	public async void GoHome()
+	{
+		await Task.Delay(1000);
+		NavigationManager.NavigateTo("");
+	}
+
+
+
+}

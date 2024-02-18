@@ -1,0 +1,193 @@
+﻿@page "/item/{id:int}"
+@using Microsoft.IdentityModel.Tokens
+@inject IItemService ItemService
+@inject ILocalStorageService LocalStorage
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@*This check displays a message while the api fetches the item, then the item is displayed *@
+@if (item == null)
+{
+	<span>@message</span>
+
+}
+
+else
+{
+	<MudGrid>
+		<MudItem xs="5">
+			<MudPaper Class="pt-1" Elevation="6" >
+				<MudText Align="Align.Center" Typo="Typo.h4">@item.Name</MudText>
+			</MudPaper>
+		</MudItem>
+		<MudItem xs="7"></MudItem>
+		<MudItem xs="4">
+			<MudImage Class="myImage" Fluid="true" Src="@item.ImageUrl" Alt="@item.Name" ObjectFit="ObjectFit.ScaleDown"/>
+		</MudItem>
+		<MudItem xs="1"/>
+		<MudItem xs="6">
+			<MudText Align="Align.Center" Typo="Typo.h5">@item.Brand</MudText>
+			<MudPaper Elevation="6" Class="mb-4">
+				<MudExpansionPanels>
+					<MudExpansionPanel IsInitiallyExpanded="true" Text="Item Description">
+						<MudText Class="p-3">@item.Description</MudText>
+					</MudExpansionPanel>
+				</MudExpansionPanels>
+			</MudPaper>
+			<MudPaper Class="mt-3" Elevation="12">
+				<MudGrid>
+					<MudItem xs="12">
+						@*if item has variants create a select box, which displays information dependent on variant*@
+						
+							@if (item.Variants != null && item.Variants.Count > 1)
+							{
+								<MudSelect Class="px-12" @bind-Value="currentGroupId" Variant="Variant.Filled">
+									@foreach (var variant in item.Variants)
+									{
+										<MudSelectItem Value="@variant.ItemGroupId">@variant.ItemGroup.Name</MudSelectItem>
+									}
+								</MudSelect>
+
+							}
+							@if (item.Variants.Count == 1)
+							{
+								<MudSelect Class="px-12" @bind-Value="currentGroupId" Variant="Variant.Filled">
+									<MudSelectItem Value="@item.Variants[0].ItemGroupId" For="">@item.Variants[0].ItemGroup.Name</MudSelectItem>
+								</MudSelect>
+
+							}
+							@if (item.Variants.Count <= 0)
+							{
+								<h4>No current item variants</h4>
+							}
+					</MudItem>
+					<MudItem xs="12">
+						@if (GetSelectedVariant() != null)
+						{
+					@*display price based on what item is selected*@
+							<MudPaper Elevation="0" Class="px-16">
+								@if (GetSelectedVariant().OriginalPrice > GetSelectedVariant().Price)
+								{
+									<h6 class="text-muted original-price">
+										$@GetSelectedVariant().OriginalPrice
+									</h6>
+								}
+								<h4 class="price">
+									$@GetSelectedVariant().Price
+								</h4>
+							</MudPaper>
+						}
+					</MudItem>
+				</MudGrid>
+			</MudPaper>
+			<MudPaper Class="pt-5" Elevation="1">
+				<AuthorizeView>
+					<Authorized>
+						<MudGrid Justify="Justify.Center">
+							<MudItem Class="d-flex justify-content-center" xs="12">
+								<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddVariant">Add Variant</MudButton>
+							</MudItem>
+							<MudItem xs="12" Class="d-flex justify-content-center">
+							@if (item.Variants != null && item.Variants.Count > 1)
+							{
+								<MudButton Variant="Variant.Filled" Color="Color.Warning" @onclick="() => DeleteItem(item.Id, GetSelectedVariant().ItemGroupId)">Delete Selected Variant</MudButton>
+							}
+							else if (item.Variants.Count == 1)
+							{
+								<MudButton Variant="Variant.Filled" Color="Color.Warning" @onclick="() => DeleteItem(item.Id, GetSelectedVariant().ItemGroupId)">Delete Only Variant</MudButton>
+							}
+							</MudItem>
+						</MudGrid>
+					</Authorized>
+				</AuthorizeView>
+			</MudPaper>
+		</MudItem>
+	</MudGrid>
+}
+
+@code {
+	private Item? item = null;
+	private string message = string.Empty;
+	private int currentGroupId = 1;
+
+	[Parameter]
+	public int Id { get; set; }
+
+
+	protected override async Task OnParametersSetAsync()
+	{
+
+		message = "Loading Item...";
+		var result = await ItemService.GetItem(Id);
+		if (!result.Success)
+		{
+			message = result.Message;
+			item = null;
+		}
+		else
+		{
+			item = result.Data;
+			if (item.Variants.Count > 0)
+			{
+				currentGroupId = item.Variants[0].ItemGroupId;
+			}
+		}
+	}
+	private async Task DeleteItem(int itemId, int itemGroupId)
+	{
+		if (currentGroupId != null || currentGroupId != 0)
+		{
+
+			DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
+			var dialog = await DialogService.ShowAsync<Confirmation_dialog>("Confirm", options);
+			var result = await dialog.Result;
+
+			if (!result.Canceled)
+			{
+				await ItemService.DeleteItemVariant(itemId, itemGroupId);
+				
+				await ItemService.GetItems();
+				var response = await ItemService.GetItem(Id);
+				item = response.Data;
+				if (item.Variants.Count >= 1)
+				{
+					currentGroupId = item.Variants.FirstOrDefault().ItemGroupId;
+				}
+				
+			}
+		}
+		StateHasChanged();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			
+		}
+		else
+		{
+			ItemService.ItemsChanged += StateHasChanged;
+		}
+		
+
+	}
+
+	private ItemVariant GetSelectedVariant()
+	{
+		var variant = item.Variants.FirstOrDefault(v => v.ItemGroupId == currentGroupId);
+		return variant;
+	}
+	
+	private void AddVariant()
+	{
+		if (item != null) NavigationManager.NavigateTo("/itemvariantcreate/" + item.Id);
+	}
+
+	public async void GoHome()
+	{
+		NavigationManager.NavigateTo("");
+	}
+
+}

@@ -1,0 +1,125 @@
+﻿@inject IItemService ItemService
+@inject NavigationManager NavigationManager
+@implements IDisposable 
+@inject IDialogService DialogService
+
+@*displays a message while the products are loading, or displays it indefinitely if there are no products*@
+
+
+
+@if (ItemService.Items == null || ItemService.Items.Count == 0)
+{
+	<span>@ItemService.Message</span>
+}
+@*else
+{
+	<MudGrid>
+		@foreach (var item in ItemService.Items)
+		{
+			<MudItem Class="media my-3" xs="12">
+				
+				<MudGrid>
+					<MudItem Style="display: flex" xs="6">
+						<a href="/item/@item.Id">
+							<MudImage Class="media-img-wrapper mr-2" Elevation="0" Src="@item.ImageUrl" Alt="@item.Name" Width="250" ></MudImage>
+						</a>
+					</MudItem>
+					<MudItem Class="media-body" xs="6">
+						<MudText Align="Align.Center" Typo="Typo.h5" Class="mb-0">@item.Name</MudText>
+
+						<MudSpacer/>
+						<p>@item.Description</p>
+						<h5 class="price">@GetPriceText(item)</h5>
+					</MudItem>
+				</MudGrid>
+				
+			</MudItem>
+		}
+	</MudGrid>
+}*@
+
+else
+{
+	<ul class="list-unstyled">
+		@foreach (var item in ItemService.Items)
+		{
+			<li class="media my-3">
+				<div class="media-img-wrapper mr-2">
+					<a href="/item/@item.Id">
+						<img class="media-img" src="@item.ImageUrl" alt="@item.Name"/>
+					</a>
+				</div>
+				<div class="media-body">
+					<a href="/item/@item.Id">
+						<h4 class="mb-0"> @item.Name</h4>
+					</a>
+					<p>@item.Description</p>
+					<h5 class="price">
+						@GetPriceText(item)
+					</h5>
+					<AuthorizeView>
+						<Authorized>
+							<MudSpacer/>
+							<MudButton Variant="Variant.Filled" Color="Color.Warning" @onclick="@(() => DeleteItem(item.Id))">Delete
+							</MudButton>
+						</Authorized>
+					</AuthorizeView>
+				</div>
+			</li>
+		}
+	</ul>
+	
+}
+
+@code {
+
+	protected override async Task OnInitializedAsync()
+	{
+		ItemService.ItemsChanged += StateHasChanged;
+	}
+
+	public void Dispose()
+	{
+		ItemService.ItemsChanged -= StateHasChanged;
+	}
+
+	void ShowPage(int id)
+	{
+		NavigationManager.NavigateTo($"item/");
+	}
+
+	private async Task DeleteItem(int itemId)
+	{
+
+		DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
+		var dialog = await DialogService.ShowAsync<Confirmation_dialog>("Confirm", options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled)
+		{
+			await ItemService.DeleteItem(itemId);
+			await ItemService.GetItems();
+
+
+		}
+
+	}
+
+	private string GetPriceText(Item item)
+	{
+		var variants = item.Variants;
+		if (variants.Count == 0)
+		{
+			return string.Empty;
+		}
+		else if (variants.Count == 1)
+		{
+			return $"${variants[0].Price}";
+		}
+		decimal minPrice = variants.Min(v => v.Price);
+		return $"Starting at ${minPrice}";
+
+	}
+
+
+}

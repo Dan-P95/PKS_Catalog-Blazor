@@ -1,0 +1,69 @@
+﻿@page "/userlogin"
+@inject IUserService UserService
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>User Login</PageTitle>
+
+<EditForm Model="@user" OnValidSubmit="HandleSubmit">
+	<DataAnnotationsValidator/>
+	<MudGrid>
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="User Name"
+					              @bind-Value="user.UserName" For="@(() => user.UserName)" />
+					<MudTextField Label="Password" Class="mt-3"
+					              @bind-Value="user.Password" For="@(() => user.Password)" InputType="InputType.Password" />
+
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Login</MudButton>
+				</MudCardActions>
+				<MudCardContent>
+					@if (alert)
+					{
+						<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+					}
+					@if (worked)
+					{
+						<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+					}
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+		<MudItem>
+			<MudText>For Demo</MudText>
+			<MudText>Username; test</MudText>
+			<MudText>Password; password</MudText>
+		</MudItem>
+	</MudGrid>
+</EditForm>
+<div class="text-danger">
+	<span>@message</span>
+</div>
+
+@code {
+	private LoginUser user = new LoginUser();
+	bool alert = false;
+	bool worked = false;
+	string message = string.Empty;
+	
+
+	private async Task HandleSubmit(EditContext context)
+	{
+		var result = await UserService.LoginUser(user);
+		if (result.Success)
+		{
+			message = string.Empty;
+			await LocalStorage.SetItemAsync("authToken", result.Data);
+			await AuthenticationStateProvider.GetAuthenticationStateAsync();
+			NavigationManager.NavigateTo("");
+		}
+		else
+		{
+			message = result.Message;
+		}
+	}
+}

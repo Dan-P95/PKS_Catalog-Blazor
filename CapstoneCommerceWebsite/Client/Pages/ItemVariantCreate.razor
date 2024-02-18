@@ -1,0 +1,151 @@
+﻿@page "/itemvariantcreate/{id:int}"
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+@using System.Runtime.CompilerServices
+@inject IItemService ItemService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+
+<PageTitle>CreateItem</PageTitle>
+
+<EditForm Model="@createVariant" OnValidSubmit="OnValidSubmit">
+	<DataAnnotationsValidator />
+	<MudGrid>
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="Item Name" @bind-Value="currentItem.Name" ReadOnly="true" />
+					<MudSpacer/>
+					<MudDivider/>
+					<MudField Label="Set original price higher if item is on sale, else leave it blank" Variant="Variant.Outlined">
+						<MudNumericField HideSpinButtons="true" Min="0" Immediate="false" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.Price" HelperText="Current Price" />
+						<MudNumericField HideSpinButtons="true" Min="0" Immediate="false" Format="N2" Culture="@_en" T="decimal" @bind-Value="createVariant.OriginalPrice" HelperText="Original Price" />
+					</MudField>
+
+					<MudSelect @bind-Value="createVariant.ItemGroupId" HelperText="Select an option" Text="Variant Options" >
+						@foreach (ItemGroup option in variantOptionsListById)
+						{
+							<MudSelectItem Value="@option.Id">@option.Name</MudSelectItem>
+						}
+					</MudSelect>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Create</MudButton>
+					<MudButton ButtonType="ButtonType.Button" OnClick="GoToItemPage" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto">Cancel</MudButton>
+				</MudCardActions>
+				<MudCardContent>
+					@if (alert)
+					{
+						<MudAlert Dense="true" Severity="Severity.Error">@message</MudAlert>
+					}
+					@if (worked)
+					{
+						<MudAlert Dense="true" Severity="Severity.Success">@message</MudAlert>
+						GoToItemPage();
+					}
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+</EditForm>
+
+
+@code {
+	//[Parameter]
+	//public CreateItemVariant createVariant { get; set; }
+	//[Parameter]
+	//public List<ItemGroup> variantOptionsList { get; set; }
+
+    [Parameter]
+	public int Id { get; set; }
+	//[Parameter]
+	//public List<ItemGroup> itemGroupsList { get; set; }
+
+	public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
+	CreateItemVariant createVariant = new CreateItemVariant();
+	Item currentItem = new Item();
+	bool success;
+	bool alert = false;
+	bool worked = false;
+	string message = string.Empty;
+	List<ItemGroup> variantOptionsList = new List<ItemGroup>();
+	List<ItemGroup> variantOptionsListById = new List<ItemGroup>();
+
+
+
+	protected override async Task OnParametersSetAsync()
+	{
+
+		message = "Loading Item...";
+		var result = await ItemService.GetItem(Id);
+		await ItemService.GetItemGroups();
+		if (!result.Success)
+		{
+			message = result.Message;
+		}
+		else
+		{
+			currentItem = result.Data;
+			createVariant.ItemId = currentItem.Id;
+			variantOptionsList = ItemService.ItemGroups;
+
+			switch (currentItem.GroupId)
+			{
+				case 1:
+					variantOptionsListById.Add(variantOptionsList[1]);
+					variantOptionsListById.Add(variantOptionsList[2]);
+					variantOptionsListById.Add(variantOptionsList[3]);
+					variantOptionsListById.Add(variantOptionsList[4]);
+					break;
+				case 2 or 3:
+					variantOptionsListById.Add(variantOptionsList[5]);
+					variantOptionsListById.Add(variantOptionsList[6]);
+					variantOptionsListById.Add(variantOptionsList[7]);
+					break;
+			}
+		}
+	}
+
+
+	protected override void OnInitialized()
+	{
+		ItemService.ItemsChanged += StateHasChanged;
+		
+	}
+
+	public void Dispose()
+	{
+		ItemService.ItemsChanged -= StateHasChanged;
+	}
+
+	
+	public async void OnValidSubmit()
+	{
+
+		if (createVariant.Price < 0 || createVariant.OriginalPrice < 0)
+		{
+			message = "Prices must not be negative!";
+			return;
+		}
+		success = true;
+		var result = await ItemService.AddItemVariant(createVariant);
+
+		//if fail display error message otherwise display success
+		message = !result.Success ? result.Message : "Success";
+		//set bool to inverse of success
+		alert = !result.Success;
+		worked = result.Success;
+		StateHasChanged();
+
+	}
+
+
+	public async void GoToItemPage()
+	{
+		await Task.Delay(1000);
+		NavigationManager.NavigateTo("/item/"+ currentItem.Id);
+	}
+
+}
