@@ -21,6 +21,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//services added here
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGroupService, GroupService>();

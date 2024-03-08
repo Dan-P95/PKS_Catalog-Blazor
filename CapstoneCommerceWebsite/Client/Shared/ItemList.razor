@@ -11,32 +11,6 @@
 {
 	<span>@ItemService.Message</span>
 }
-@*else
-{
-	<MudGrid>
-		@foreach (var item in ItemService.Items)
-		{
-			<MudItem Class="media my-3" xs="12">
-				
-				<MudGrid>
-					<MudItem Style="display: flex" xs="6">
-						<a href="/item/@item.Id">
-							<MudImage Class="media-img-wrapper mr-2" Elevation="0" Src="@item.ImageUrl" Alt="@item.Name" Width="250" ></MudImage>
-						</a>
-					</MudItem>
-					<MudItem Class="media-body" xs="6">
-						<MudText Align="Align.Center" Typo="Typo.h5" Class="mb-0">@item.Name</MudText>
-
-						<MudSpacer/>
-						<p>@item.Description</p>
-						<h5 class="price">@GetPriceText(item)</h5>
-					</MudItem>
-				</MudGrid>
-				
-			</MudItem>
-		}
-	</MudGrid>
-}*@
 
 else
 {

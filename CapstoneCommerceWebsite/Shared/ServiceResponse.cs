@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace PKS_Catalog.Shared
 {
+	//class mainly used to get response from the api, best practices
 	public class ServiceResponse<T>
 	{
 		public T? Data { get; set; }

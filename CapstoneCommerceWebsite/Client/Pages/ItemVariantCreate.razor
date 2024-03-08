@@ -8,6 +8,7 @@
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 
+@*This page is used to create specific item variants after an item exists*@
 <PageTitle>CreateItem</PageTitle>
 
 <EditForm Model="@createVariant" OnValidSubmit="OnValidSubmit">
@@ -53,16 +54,10 @@
 
 
 @code {
-	//[Parameter]
-	//public CreateItemVariant createVariant { get; set; }
-	//[Parameter]
-	//public List<ItemGroup> variantOptionsList { get; set; }
-
+	
     [Parameter]
 	public int Id { get; set; }
-	//[Parameter]
-	//public List<ItemGroup> itemGroupsList { get; set; }
-
+	
 	public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
 	CreateItemVariant createVariant = new CreateItemVariant();
 	Item currentItem = new Item();
@@ -72,7 +67,6 @@
 	string message = string.Empty;
 	List<ItemGroup> variantOptionsList = new List<ItemGroup>();
 	List<ItemGroup> variantOptionsListById = new List<ItemGroup>();
-
 
 
 	protected override async Task OnParametersSetAsync()

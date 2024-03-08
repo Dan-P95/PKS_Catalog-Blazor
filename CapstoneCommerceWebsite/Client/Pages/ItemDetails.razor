@@ -12,7 +12,7 @@
 	<span>@message</span>
 
 }
-
+@*This page is for specific items. Can be used to delete or edit items if user is logged in*@
 else
 {
 	<MudGrid>
@@ -117,7 +117,7 @@ else
 
 	protected override async Task OnParametersSetAsync()
 	{
-
+		
 		message = "Loading Item...";
 		var result = await ItemService.GetItem(Id);
 		if (!result.Success)
@@ -136,9 +136,10 @@ else
 	}
 	private async Task DeleteItem(int itemId, int itemGroupId)
 	{
+		//makes sure selected item variant exists and is selected, and then deletes it
 		if (currentGroupId != null || currentGroupId != 0)
 		{
-
+			//dialog as confirmation
 			DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
 			var dialog = await DialogService.ShowAsync<Confirmation_dialog>("Confirm", options);
 			var result = await dialog.Result;
@@ -162,6 +163,7 @@ else
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
+		//fetches updated item list after deletion or update
 		if (firstRender)
 		{
 			

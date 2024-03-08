@@ -7,6 +7,7 @@
 @inject IDialogService DialogService
 
 
+@*This page is used to edit a specific item*@
 <PageTitle>EditItem</PageTitle>
 
 <EditForm Model="@item" OnValidSubmit="OnValidSubmit">
@@ -71,6 +72,7 @@
 		message = "Loading Item...";
 		var result = await ItemService.GetItem(Id);
 		
+		//validate item exists
 		if (!result.Success)
 		{
 			message = result.Message;
@@ -107,6 +109,7 @@
 
 	async Task OpenDialog()
 	{
+		//dialog confirmation
 		DialogOptions options = new DialogOptions() { Position = DialogPosition.TopCenter };
 		var dialog = await DialogService.ShowAsync<Reminder_dialog>("Remember", options);
 		var result = await dialog.Result;
